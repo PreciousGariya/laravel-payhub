@@ -1,6 +1,6 @@
 <?php
 
-namespace Vendor\Payments\Contracts;
+namespace Gokulsingh\LaravelPayhub\Contracts;
 
 interface GatewayInterface
 {

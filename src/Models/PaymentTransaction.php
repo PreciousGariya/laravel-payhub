@@ -1,6 +1,6 @@
 <?php
 
-namespace Vendor\Payments\Models;
+namespace Gokulsingh\LaravelPayhub\Models;
 
 use Illuminate\Database\Eloquent\Model;
 

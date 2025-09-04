@@ -1,6 +1,6 @@
 <?php
 
-namespace Vendor\Payments\Events;
+namespace Gokulsingh\LaravelPayhub\Events;
 
 class PaymentCreated
 {

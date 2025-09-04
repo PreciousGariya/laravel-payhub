@@ -1,6 +1,6 @@
 <?php
 
-namespace Vendor\Payments\Http\Controllers;
+namespace Gokulsingh\LaravelPayhub\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;

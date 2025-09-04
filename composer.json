@@ -12,16 +12,16 @@
   ],
   "autoload": {
     "psr-4": {
-      "Gokulsingh\\Payhub\\": "src/"
+      "Gokulsingh\\LaravelPayhub\\": "src/"
     }
   },
   "extra": {
     "laravel": {
       "providers": [
-        "Gokulsingh\\Payhub\\PaymentServiceProvider"
+        "Gokulsingh\\LaravelPayhub\\PaymentServiceProvider"
       ],
       "aliases": {
-        "Payment": "Gokulsingh\\Payhub\\Facades\\Payment"
+        "Payment": "Gokulsingh\\LaravelPayhub\\Facades\\Payment"
       }
     }
   },

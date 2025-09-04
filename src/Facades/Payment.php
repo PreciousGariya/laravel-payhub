@@ -1,6 +1,6 @@
 <?php
 
-namespace Vendor\Payments\Facades;
+namespace Gokulsingh\LaravelPayhub\Facades;
 
 use Illuminate\Support\Facades\Facade;
 

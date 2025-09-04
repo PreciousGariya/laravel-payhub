@@ -1,6 +1,6 @@
 <?php
 
-namespace Vendor\Payments\Traits;
+namespace Gokulsingh\LaravelPayhub\Traits;
 
 use Vendor\Payments\Models\PaymentTransaction;
 

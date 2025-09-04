@@ -1,6 +1,6 @@
 <?php
 
-namespace Vendor\Payments\Support;
+namespace Gokulsingh\LaravelPayhub\Support;
 
 use Illuminate\Support\Facades\Log;
 

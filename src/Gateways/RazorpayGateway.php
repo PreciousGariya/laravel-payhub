@@ -1,6 +1,6 @@
 <?php
 
-namespace Vendor\Payments\Gateways;
+namespace Gokulsingh\LaravelPayhub\Gateways;
 
 use Vendor\Payments\Support\BaseGateway;
 use Vendor\Payments\Contracts\GatewayInterface;
