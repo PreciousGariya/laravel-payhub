@@ -11,8 +11,8 @@ class Payment
 {
     protected $gateway;
     protected string $gatewayName = '';
-    public function __construct(){ $this->useGateway(config('payment.default','razorpay')); }
-    public function useGateway(string $name): static
+    public function __construct(){ $this->gateway(config('payment.default','razorpay')); }
+    public function gateway(string $name): static
     {
         $name = strtolower($name);
         $this->gatewayName = $name;
