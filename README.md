@@ -1,5 +1,7 @@
 # Laravel PayHub — Step-by-step Guide (Beginner Friendly)
 
+![Image 1](docs/ss-payhub-1.png)
+
 A unified payment wrapper for Laravel supporting **Razorpay** and **Cashfree**.
 It provides a consistent API: create orders, charge, refund, verify webhooks, store optional logs, and attach custom metadata per order.
 
