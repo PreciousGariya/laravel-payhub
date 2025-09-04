@@ -15,6 +15,8 @@ class CashfreeGateway extends BaseGateway implements GatewayInterface
     protected string $appId;
     protected string $secret;
     protected string $base;
+    protected string $apiVersion = '2025-01-01';
+
 
     public function __construct(array $config = [])
     {
@@ -32,6 +34,7 @@ class CashfreeGateway extends BaseGateway implements GatewayInterface
     {
         return [
             'x-client-id'     => $this->appId,
+            'x-api-version'  => $this->apiVersion,
             'x-client-secret' => $this->secret,
             'Content-Type'    => 'application/json',
         ];
