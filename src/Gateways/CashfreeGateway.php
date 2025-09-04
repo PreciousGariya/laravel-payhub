@@ -44,7 +44,7 @@ class CashfreeGateway extends BaseGateway implements GatewayInterface
     {
         try {
             $payload = [
-                'order_id'       => $data['order_id'] ?? uniqid('cf_'),
+                'order_id'       => isset($data['order_id']) ? $data['order_id'] : null,
                 'order_amount'   => (int)($data['amount'] ?? 0),
                 'order_currency' => $data['currency'] ?? 'INR',
                 'customer_details' => [
@@ -53,6 +53,9 @@ class CashfreeGateway extends BaseGateway implements GatewayInterface
                     'customer_phone' => $data['phone'] ?? null,
                 ],
                 'metadata' => $data['metadata'] ?? [],
+                'order_tags' => $data['order_tags'] ?? [],
+                'order_note' => $data['order_note'] ?? null,
+                'order_expiry' => $data['order_expiry'] ?? null,
             ];
 
             $resp = Http::withHeaders($this->headers())

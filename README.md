@@ -87,11 +87,15 @@ PAYMENT_GATEWAY=razorpay
 # Razorpay
 RAZORPAY_KEY=rzp_test_xxx
 RAZORPAY_SECRET=rzp_secret_xxx
+RAZORPAY_WEBHOOK_SECRET=your_rzp_webhook_secret
+
 
 # Cashfree
 CASHFREE_APP_ID=your_cashfree_app_id
 CASHFREE_SECRET=your_cashfree_secret
 CASHFREE_MODE=sandbox # or production
+CASHFREE_WEBHOOK_SECRET=your_cf_webhook_secret
+
 
 # Logging (DB)
 PAYMENT_LOGGING_ENABLED=true
@@ -129,12 +133,23 @@ $order = Payment::createOrder([
 
 ```php
 $orderCF = Payment::gateway('cashfree')->createOrder([
-    'amount'   => 1200, // ₹1200
-    'currency' => 'INR',
-    'email'    => 'customer@example.com',
-    'phone'    => '9876543210',
-    'metadata' => ['receipt' => 'CF-202'],
-]);
+             'order_id' => uniqid('ord_'), //else remove automatic generate
+            'amount' => 1500,
+            'currency' => 'INR',
+            'customer_id' => "3297842",
+            'email' => 'v2t9H@example.com',
+            'phone' => '9999999999',
+            'metadata' => [
+                'return_url' => 'https://mysite.domain/return_url', // https url else remove 
+                'notify_url' => 'https://mysite.domain/notify_url', // https url else remove 
+                'payment_methods' =>  "cc", "dc", "ccc", "ppc","nb","upi","paypal","app","paylater","cardlessemi","dcemi","ccemi", //check for all available options in cashfree documentation 
+                "banktransfer"
+            ],
+            'order_tags' => [
+                'note1' => 'note1',
+                'note2' => 'note2',
+            ]
+        ]);
 ```
 
 **Charge / verify a payment**
@@ -229,13 +244,23 @@ Notes:
 public function createCashfreeOrder()
 {
     $order = Payment::gateway('cashfree')->createOrder([
-        'amount'      => 1200,
-        'currency'    => 'INR',
-        'email'       => 'customer@example.com',
-        'phone'       => '9876543210',
-        'customer_id' => 'cust_1001',
-        'metadata'    => ['receipt' => 'cf_order_202'],
-    ]);
+            'order_id' => uniqid('ord_'), //else remove automatic generate
+            'amount' => 1500,
+            'currency' => 'INR',
+            'customer_id' => "3297842",
+            'email' => 'v2t9H@example.com',
+            'phone' => '9999999999',
+            'metadata' => [
+                'return_url' => 'https://mysite.domain/return_url', // https url else remove 
+                'notify_url' => 'https://mysite.domain/notify_url', // https url else remove 
+                'payment_methods' =>  "cc", "dc", "ccc", "ppc","nb","upi","paypal","app","paylater","cardlessemi","dcemi","ccemi", //check for all available options in cashfree documentation 
+                "banktransfer"
+            ],
+            'order_tags' => [
+                'note1' => 'note1',
+                'note2' => 'note2',
+            ]
+        ]);
     return response()->json($order);
 }
 ```
