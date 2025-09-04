@@ -5,35 +5,73 @@ namespace Gokulsingh\LaravelPayhub\Gateways;
 use Gokulsingh\LaravelPayhub\Support\BaseGateway;
 use Gokulsingh\LaravelPayhub\Contracts\GatewayInterface;
 use Gokulsingh\LaravelPayhub\Traits\LogsTransactions;
+use Illuminate\Support\Facades\Http;
 
 class CashfreeGateway extends BaseGateway implements GatewayInterface
 {
     use LogsTransactions;
 
     protected string $gatewayName = 'cashfree';
+    protected string $appId;
+    protected string $secret;
+    protected string $base;
+
+    public function __construct(array $config = [])
+    {
+        parent::__construct($config);
+
+        $this->appId  = $config['app_id'] ?? config('payment.gateways.cashfree.app_id');
+        $this->secret = $config['secret'] ?? config('payment.gateways.cashfree.secret');
+        $mode         = $config['mode'] ?? config('payment.gateways.cashfree.mode', 'sandbox');
+        $this->base   = $mode === 'production'
+            ? config('payment.gateways.cashfree.base_url_production')
+            : config('payment.gateways.cashfree.base_url_sandbox');
+    }
+
+    protected function headers(): array
+    {
+        return [
+            'x-client-id'     => $this->appId,
+            'x-client-secret' => $this->secret,
+            'Content-Type'    => 'application/json',
+        ];
+    }
 
     public function createOrder(array $data): array
     {
         try {
-            $resp = [
-                'order_id' => 'cf_' . uniqid(),
-                'order_amount' => (int) ($data['amount'] ?? 0),
+            $payload = [
+                'order_id'       => $data['order_id'] ?? uniqid('cf_'),
+                'order_amount'   => (int)($data['amount'] ?? 0),
                 'order_currency' => $data['currency'] ?? 'INR',
-                'status' => 'created',
-                'payment_link' => 'https://example.com/pay/' . uniqid(),
+                'customer_details' => [
+                    'customer_id'    => $data['customer_id'] ?? uniqid('cust_'),
+                    'customer_email' => $data['email'] ?? null,
+                    'customer_phone' => $data['phone'] ?? null,
+                ],
+                'metadata' => $data['metadata'] ?? [],
             ];
 
-            $norm = $this->normalize($resp, [
-                'id' => 'order_id',
-                'type' => 'order',
-                'amount' => 'order_amount',
+            $resp = Http::withHeaders($this->headers())
+                ->post($this->base . '/orders', $payload);
+
+            if (!$resp->successful()) {
+                throw new \Exception('Cashfree API error: ' . $resp->body());
+            }
+
+            $r = $resp->json();
+            $norm = $this->normalize($r, [
+                'id'       => 'order_id',
+                'type'     => 'order',
+                'amount'   => 'order_amount',
                 'currency' => 'order_currency',
-                'status' => 'status',
-                'gateway' => 'cashfree',
-                'custom' => ['payment_link' => 'payment_link'],
+                'status'   => 'order_status',
+                'gateway'  => 'cashfree',
+                'custom'   => ['payment_link' => 'payment_link'],
             ]);
 
             $this->logTransaction('cashfree', 'order', $norm['status'], $norm);
+
             return $this->success($norm);
         } catch (\Throwable $e) {
             return $this->handleException($e, 'createOrder');
@@ -43,23 +81,30 @@ class CashfreeGateway extends BaseGateway implements GatewayInterface
     public function charge(array $data): array
     {
         try {
-            $resp = [
-                'id' => $data['order_id'] ?? ('cf_' . uniqid()),
-                'amount' => (int) ($data['amount'] ?? 0),
-                'currency' => $data['currency'] ?? 'INR',
-                'status' => 'processing',
-            ];
+            $orderId = $data['order_id'] ?? null;
+            if (!$orderId) {
+                throw new \InvalidArgumentException('order_id required');
+            }
 
-            $norm = $this->normalize($resp, [
-                'id' => 'id',
-                'type' => 'payment',
-                'amount' => 'amount',
-                'currency' => 'currency',
-                'status' => 'status',
-                'gateway' => 'cashfree',
+            $resp = Http::withHeaders($this->headers())
+                ->get($this->base . '/orders/' . $orderId);
+
+            if (!$resp->successful()) {
+                throw new \Exception('Cashfree API error: ' . $resp->body());
+            }
+
+            $r = $resp->json();
+            $norm = $this->normalize($r, [
+                'id'       => 'order_id',
+                'type'     => 'payment',
+                'amount'   => 'order_amount',
+                'currency' => 'order_currency',
+                'status'   => 'order_status',
+                'gateway'  => 'cashfree',
             ]);
 
             $this->logTransaction('cashfree', 'charge', $norm['status'], $norm);
+
             return $this->success($norm);
         } catch (\Throwable $e) {
             return $this->handleException($e, 'charge');
@@ -69,27 +114,32 @@ class CashfreeGateway extends BaseGateway implements GatewayInterface
     public function refund(string $transactionId, array $data = []): array
     {
         try {
-            $amount = (int) ($data['amount'] ?? 0);
-            $resp = [
-                'id' => 'rf_' . uniqid(),
-                'transaction_id' => $transactionId,
-                'amount' => $amount,
-                'currency' => $data['currency'] ?? 'INR',
-                'status' => 'refunded',
+            $payload = [
+                'refund_amount' => $data['amount'] ?? 0,
+                'refund_note'   => $data['note'] ?? 'Refund',
             ];
 
+            $resp = Http::withHeaders($this->headers())
+                ->post($this->base . '/orders/' . $transactionId . '/refunds', $payload);
+
+            if (!$resp->successful()) {
+                throw new \Exception('Cashfree API error: ' . $resp->body());
+            }
+
+            $r = $resp->json();
             $norm = [
-                'id' => $resp['id'],
-                'type' => 'refund',
-                'amount' => $resp['amount'],
-                'currency' => $resp['currency'],
-                'status' => 'refunded',
-                'gateway' => 'cashfree',
-                'raw' => $resp,
-                'metadata' => ['transaction_id' => $transactionId],
+                'id'       => $r['refund_id'] ?? null,
+                'type'     => 'refund',
+                'amount'   => $r['refund_amount'] ?? 0,
+                'currency' => $r['currency'] ?? 'INR',
+                'status'   => $r['refund_status'] ?? 'processing',
+                'gateway'  => 'cashfree',
+                'raw'      => $r,
+                'metadata' => [],
             ];
 
             $this->logTransaction('cashfree', 'refund', $norm['status'], $norm);
+
             return $this->success($norm);
         } catch (\Throwable $e) {
             return $this->handleException($e, 'refund');
@@ -98,16 +148,161 @@ class CashfreeGateway extends BaseGateway implements GatewayInterface
 
     public function verifyWebhook(array $payload): bool
     {
-        return !empty($payload['payload']);
+        try {
+            $body = $payload['payload'] ?? '';
+            $sig  = $payload['headers']['x-webhook-signature'][0]
+                ?? ($payload['headers']['X-WEBHOOK-SIGNATURE'][0] ?? null);
+
+            if (!$sig) {
+                return false;
+            }
+
+            $webhookSecret = $this->config['webhook_secret']
+                ?? config('payment.gateways.cashfree.webhook_secret');
+
+            if (!$webhookSecret) {
+                throw new \Exception('Cashfree webhook_secret not configured.');
+            }
+
+            $expected = base64_encode(
+                hash_hmac('sha256', $body, $webhookSecret, true)
+            );
+
+            return hash_equals($expected, $sig);
+        } catch (\Throwable $e) {
+            return false;
+        }
     }
 
-    // Optional listings (stubs)
-    public function getOrders(array $filters = []): array { return []; }
-    public function getOrder(string $orderId): array { return []; }
-    public function getPayments(array $filters = []): array { return []; }
-    public function getPayment(string $paymentId): array { return []; }
-    public function getInvoices(array $filters = []): array { return []; }
-    public function getInvoice(string $invoiceId): array { return []; }
-    public function getSettlements(array $filters = []): array { return []; }
-    public function getSettlement(string $settlementId): array { return []; }
+    /* -----------------------
+     * Additional Resource Methods
+     * ----------------------- */
+
+    public function getOrders(array $filters = []): array
+    {
+        try {
+            $resp = Http::withHeaders($this->headers())
+                ->get($this->base . '/orders', $filters);
+
+            if (!$resp->successful()) {
+                throw new \Exception('Cashfree API error: ' . $resp->body());
+            }
+
+            return $this->success($resp->json());
+        } catch (\Throwable $e) {
+            return $this->handleException($e, 'getOrders');
+        }
+    }
+
+    public function getOrder(string $orderId): array
+    {
+        try {
+            $resp = Http::withHeaders($this->headers())
+                ->get($this->base . '/orders/' . $orderId);
+
+            if (!$resp->successful()) {
+                throw new \Exception('Cashfree API error: ' . $resp->body());
+            }
+
+            return $this->success($resp->json());
+        } catch (\Throwable $e) {
+            return $this->handleException($e, 'getOrder');
+        }
+    }
+
+    public function getPayments(array $filters = []): array
+    {
+        try {
+            $resp = Http::withHeaders($this->headers())
+                ->get($this->base . '/payments', $filters);
+
+            if (!$resp->successful()) {
+                throw new \Exception('Cashfree API error: ' . $resp->body());
+            }
+
+            return $this->success($resp->json());
+        } catch (\Throwable $e) {
+            return $this->handleException($e, 'getPayments');
+        }
+    }
+
+    public function getPayment(string $paymentId): array
+    {
+        try {
+            $resp = Http::withHeaders($this->headers())
+                ->get($this->base . '/payments/' . $paymentId);
+
+            if (!$resp->successful()) {
+                throw new \Exception('Cashfree API error: ' . $resp->body());
+            }
+
+            return $this->success($resp->json());
+        } catch (\Throwable $e) {
+            return $this->handleException($e, 'getPayment');
+        }
+    }
+
+    public function getInvoices(array $filters = []): array
+    {
+        try {
+            $resp = Http::withHeaders($this->headers())
+                ->get($this->base . '/invoices', $filters);
+
+            if (!$resp->successful()) {
+                throw new \Exception('Cashfree API error: ' . $resp->body());
+            }
+
+            return $this->success($resp->json());
+        } catch (\Throwable $e) {
+            return $this->handleException($e, 'getInvoices');
+        }
+    }
+
+    public function getInvoice(string $invoiceId): array
+    {
+        try {
+            $resp = Http::withHeaders($this->headers())
+                ->get($this->base . '/invoices/' . $invoiceId);
+
+            if (!$resp->successful()) {
+                throw new \Exception('Cashfree API error: ' . $resp->body());
+            }
+
+            return $this->success($resp->json());
+        } catch (\Throwable $e) {
+            return $this->handleException($e, 'getInvoice');
+        }
+    }
+
+    public function getSettlements(array $filters = []): array
+    {
+        try {
+            $resp = Http::withHeaders($this->headers())
+                ->get($this->base . '/settlements', $filters);
+
+            if (!$resp->successful()) {
+                throw new \Exception('Cashfree API error: ' . $resp->body());
+            }
+
+            return $this->success($resp->json());
+        } catch (\Throwable $e) {
+            return $this->handleException($e, 'getSettlements');
+        }
+    }
+
+    public function getSettlement(string $id): array
+    {
+        try {
+            $resp = Http::withHeaders($this->headers())
+                ->get($this->base . '/settlements/' . $id);
+
+            if (!$resp->successful()) {
+                throw new \Exception('Cashfree API error: ' . $resp->body());
+            }
+
+            return $this->success($resp->json());
+        } catch (\Throwable $e) {
+            return $this->handleException($e, 'getSettlement');
+        }
+    }
 }
