@@ -1,5 +1,5 @@
 {
-  "name": "gokul/laravel-payhub",
+  "name": "gokulsingh/laravel-payhub",
   "description": "Unified payment wrapper for Laravel (Razorpay + Cashfree)",
   "type": "library",
   "license": "MIT",
@@ -12,16 +12,16 @@
   ],
   "autoload": {
     "psr-4": {
-      "Gokul\\Payhub\\": "src/"
+      "Gokulsingh\\Payhub\\": "src/"
     }
   },
   "extra": {
     "laravel": {
       "providers": [
-        "Gokul\\Payhub\\PaymentServiceProvider"
+        "Gokulsingh\\Payhub\\PaymentServiceProvider"
       ],
       "aliases": {
-        "Payment": "Gokul\\Payhub\\Facades\\Payment"
+        "Payment": "Gokulsingh\\Payhub\\Facades\\Payment"
       }
     }
   },
