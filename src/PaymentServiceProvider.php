@@ -1,10 +1,10 @@
 <?php
 
-namespace Vendor\Payments;
+namespace Gokulsingh\LaravelPayhub;
 
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Route;
-use Vendor\Payments\Http\Controllers\WebhookController;
+use Gokulsingh\LaravelPayhub\Http\Controllers\WebhookController;
 
 class PaymentServiceProvider extends ServiceProvider
 {

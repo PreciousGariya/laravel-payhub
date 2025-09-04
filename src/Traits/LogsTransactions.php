@@ -2,7 +2,7 @@
 
 namespace Gokulsingh\LaravelPayhub\Traits;
 
-use Vendor\Payments\Models\PaymentTransaction;
+use Gokulsingh\LaravelPayhub\Models\PaymentTransaction;
 
 trait LogsTransactions
 {

@@ -1,14 +1,14 @@
 <?php
 
-namespace Vendor\Payments;
+namespace Gokulsingh\LaravelPayhub;
 
-use Vendor\Payments\Contracts\GatewayInterface;
-use Vendor\Payments\Gateways\RazorpayGateway;
-use Vendor\Payments\Gateways\CashfreeGateway;
-use Vendor\Payments\Events\PaymentCreated;
-use Vendor\Payments\Events\PaymentSucceeded;
-use Vendor\Payments\Events\PaymentRefunded;
-use Vendor\Payments\Events\PaymentFailed;
+use Gokulsingh\LaravelPayhub\Contracts\GatewayInterface;
+use Gokulsingh\LaravelPayhub\Gateways\RazorpayGateway;
+use Gokulsingh\LaravelPayhub\Gateways\CashfreeGateway;
+use Gokulsingh\LaravelPayhub\Events\PaymentCreated;
+use Gokulsingh\LaravelPayhub\Events\PaymentSucceeded;
+use Gokulsingh\LaravelPayhub\Events\PaymentRefunded;
+use Gokulsingh\LaravelPayhub\Events\PaymentFailed;
 use Illuminate\Support\Facades\Event;
 
 class Payment

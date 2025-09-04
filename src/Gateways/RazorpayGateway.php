@@ -2,9 +2,9 @@
 
 namespace Gokulsingh\LaravelPayhub\Gateways;
 
-use Vendor\Payments\Support\BaseGateway;
-use Vendor\Payments\Contracts\GatewayInterface;
-use Vendor\Payments\Traits\LogsTransactions;
+use Gokulsingh\LaravelPayhub\Support\BaseGateway;
+use Gokulsingh\LaravelPayhub\Contracts\GatewayInterface;
+use Gokulsingh\LaravelPayhub\Traits\LogsTransactions;
 
 class RazorpayGateway extends BaseGateway implements GatewayInterface
 {

@@ -4,9 +4,9 @@ namespace Gokulsingh\LaravelPayhub\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
-use Vendor\Payments\Facades\Payment;
-use Vendor\Payments\Events\PaymentSucceeded;
-use Vendor\Payments\Events\PaymentFailed;
+use Gokulsingh\LaravelPayhub\Facades\Payment;
+use Gokulsingh\LaravelPayhub\Events\PaymentSucceeded;
+use Gokulsingh\LaravelPayhub\Events\PaymentFailed;
 
 class WebhookController extends Controller
 {
