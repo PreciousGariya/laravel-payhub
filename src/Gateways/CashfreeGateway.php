@@ -49,6 +49,7 @@ class CashfreeGateway extends BaseGateway implements GatewayInterface
                 'order_currency' => $data['currency'] ?? 'INR',
                 'customer_details' => [
                     'customer_id'    => $data['customer_id'] ?? uniqid('cust_'),
+                    'customer_name' => $data['name'] ?? null,
                     'customer_email' => $data['email'] ?? null,
                     'customer_phone' => $data['phone'] ?? null,
                 ],
