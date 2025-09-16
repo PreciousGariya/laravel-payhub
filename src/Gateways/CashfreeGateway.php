@@ -152,34 +152,47 @@ class CashfreeGateway extends BaseGateway implements GatewayInterface
         }
     }
 
-    public function verifyWebhook(array $payload): bool
-    {
-        try {
-            $body = $payload['payload'] ?? '';
-            $sig  = $payload['headers']['x-webhook-signature'][0]
-                ?? ($payload['headers']['X-WEBHOOK-SIGNATURE'][0] ?? null);
+    /**
+ * Verify incoming Cashfree webhook request
+ *
+ * @param array $payload Array containing 'payload' (JSON string) and 'headers' (request headers)
+ * @return bool
+ */
+public function verifyWebhook(array $payload): bool
+{
+    try {
+        // Get raw JSON body
+        $body = $payload['payload'] ?? '';
 
-            if (!$sig) {
-                return false;
-            }
+        // Get the signature from headers (Cashfree sends it as x-webhook-signature)
+        $sig = $payload['headers']['x-webhook-signature'][0]
+            ?? ($payload['headers']['X-WEBHOOK-SIGNATURE'][0] ?? null);
 
-            $webhookSecret = $this->config['webhook_secret']
-                ?? config('payment.gateways.cashfree.webhook_secret');
-
-            if (!$webhookSecret) {
-                throw new \Exception('Cashfree webhook_secret not configured.');
-            }
-
-            $expected = base64_encode(
-                hash_hmac('sha256', $body, $webhookSecret, true)
-            );
-
-            return hash_equals($expected, $sig);
-        } catch (\Throwable $e) {
+        if (!$sig) {
+            // No signature found
             return false;
         }
+
+        // Get the webhook secret from config or gateway instance
+        $webhookSecret = $this->secret
+            ?? config('payment.gateways.cashfree.webhook_secret');
+
+        if (!$webhookSecret) {
+            throw new \Exception('Cashfree webhook_secret not configured.');
+        }
+
+        // Compute expected signature using HMAC-SHA256
+        $expected = base64_encode(hash_hmac('sha256', $body, $webhookSecret, true));
+
+        // Compare received signature with expected signature
+        return hash_equals($expected, $sig);
+
+    } catch (\Throwable $e) {
+        // Any error means verification failed
+        return false;
     }
 
+    }
     /* -----------------------
      * Additional Resource Methods
      * ----------------------- */
