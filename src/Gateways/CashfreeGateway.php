@@ -310,11 +310,11 @@ public function verifyWebhook(array $payload): bool
         }
     }
 
-    public function getSettlement(string $id): array
+    public function getSettlement(string $orderId): array
     {
         try {
             $resp = Http::withHeaders($this->headers())
-                ->get($this->base . '/settlements/' . $id);
+                ->get($this->base . '/settlements/' . $orderId);
 
             if (!$resp->successful()) {
                 throw new \Exception('Cashfree API error: ' . $resp->body());
@@ -323,6 +323,117 @@ public function verifyWebhook(array $payload): bool
             return $this->success($resp->json());
         } catch (\Throwable $e) {
             return $this->handleException($e, 'getSettlement');
+        }
+    }
+    // PG Reconciliation
+    /**
+     * PG Reconciliation API
+     *
+     * This endpoint is used to reconcile payments and settlements for a given date range.
+     * You can filter results using query parameters like:
+     * - start_date: (string, required) ISO8601 date-time for reconciliation start
+     * - end_date:   (string, required) ISO8601 date-time for reconciliation end
+     * - type:       (string, optional) Type of entity to reconcile ["PAYMENT", "SETTLEMENT"]
+     * - entity:     (string, optional) Entity filter ["ORDER", "REFUND", "PAYMENT"]
+     *
+     * Docs: https://www.cashfree.com/docs/api-reference/payments/latest/settlements/reconcile
+     *
+     * Example:
+     * $gateway->getReconciliation([
+     *     'start_date' => '2025-09-01T00:00:00Z',
+     *     'end_date'   => '2025-09-30T23:59:59Z',
+     *     'entity'     => 'PAYMENT'
+     * ]);
+     *
+     * @param array $filters Query parameters for reconciliation API
+     * @return array Normalized API response
+     */
+    public function getReconciliation(array $filters = []): array
+    {
+        try {
+            $resp = Http::withHeaders($this->headers())
+                ->get($this->base . '/pg/settlements/reconcile', $filters);
+
+            if (!$resp->successful()) {
+                throw new \Exception('Cashfree API error: ' . $resp->body());
+            }
+
+            $result = $resp->json();
+
+            // Normalize if you want a uniform structure
+            $norm = [
+                'type'   => 'reconciliation',
+                'status' => 'success',
+                'data'   => $result['data'] ?? [],
+                'meta'   => [
+                    'start_date' => $filters['start_date'] ?? null,
+                    'end_date'   => $filters['end_date'] ?? null,
+                ],
+                'raw'    => $result,
+            ];
+
+            return $this->success($norm);
+        } catch (\Throwable $e) {
+            return $this->handleException($e, 'getReconciliation');
+        }
+    }
+
+        /**
+     * Settlement Reconciliation – fetch events/details for settlements
+     *
+     * Docs: https://www.cashfree.com/docs/api-reference/payments/latest/settlements/settlement-reconciliation
+     *
+     * @param array $body Request body should include:
+     *                    - pagination: ['limit' => int, 'cursor' => string|null]
+     *                    - filters: [
+     *                         'cf_settlement_ids' => [ … ],
+     *                         'settlement_utrs' => [ … ],
+     *                         'start_date' => ISO8601 datetime,
+     *                         'end_date' => ISO8601 datetime,
+     *                     ]
+     * @return array Normalized settlement reconciliation response
+     */
+    public function settlementRecon(array $body): array
+    {
+        try {
+            $resp = Http::withHeaders($this->headers())
+                ->post($this->base . '/pg/settlement/recon', $body);
+
+            if (!$resp->successful()) {
+                throw new \Exception('Cashfree API error: ' . $resp->body());
+            }
+
+            $r = $resp->json();
+
+            $normalizedData = [];
+            foreach ($r['data'] ?? [] as $item) {
+                $normalizedData[] = [
+                    'id'        => $item['cf_settlement_id'] ?? null,
+                    'type'      => strtolower($item['entity'] ?? 'settlement'),
+                    'utr'       => $item['settlement_utr'] ?? null,
+                    'order_id'  => $item['order_id'] ?? null,
+                    'amount'    => $item['amount'] ?? 0,
+                    'currency'  => $item['currency'] ?? 'INR',
+                    'status'    => $item['status'] ?? 'unknown',
+                    'event_time'=> $item['event_time'] ?? null,
+                    'gateway'   => 'cashfree',
+                    'raw'       => $item,
+                ];
+            }
+
+            $norm = [
+                'type'   => 'settlement_reconciliation',
+                'status' => 'success',
+                'data'   => $normalizedData,
+                'meta'   => [
+                    'pagination' => $r['pagination'] ?? [],
+                ],
+                'raw'    => $r,
+            ];
+
+            return $this->success($norm);
+        } catch (\Throwable $e) {
+            return $this->handleException($e, 'settlementRecon');
         }
     }
 }
