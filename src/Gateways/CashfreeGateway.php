@@ -352,7 +352,7 @@ public function verifyWebhook(array $payload): bool
     {
         try {
             $resp = Http::withHeaders($this->headers())
-                ->get($this->base . '/pg/settlements/reconcile', $filters);
+                ->get($this->base . '/settlements/reconcile', $filters);
 
             if (!$resp->successful()) {
                 throw new \Exception('Cashfree API error: ' . $resp->body());
@@ -397,7 +397,7 @@ public function verifyWebhook(array $payload): bool
     {
         try {
             $resp = Http::withHeaders($this->headers())
-                ->post($this->base . '/pg/settlement/recon', $body);
+                ->post($this->base . '/settlement/recon', $body);
 
             if (!$resp->successful()) {
                 throw new \Exception('Cashfree API error: ' . $resp->body());
@@ -405,33 +405,7 @@ public function verifyWebhook(array $payload): bool
 
             $r = $resp->json();
 
-            $normalizedData = [];
-            foreach ($r['data'] ?? [] as $item) {
-                $normalizedData[] = [
-                    'id'        => $item['cf_settlement_id'] ?? null,
-                    'type'      => strtolower($item['entity'] ?? 'settlement'),
-                    'utr'       => $item['settlement_utr'] ?? null,
-                    'order_id'  => $item['order_id'] ?? null,
-                    'amount'    => $item['amount'] ?? 0,
-                    'currency'  => $item['currency'] ?? 'INR',
-                    'status'    => $item['status'] ?? 'unknown',
-                    'event_time'=> $item['event_time'] ?? null,
-                    'gateway'   => 'cashfree',
-                    'raw'       => $item,
-                ];
-            }
-
-            $norm = [
-                'type'   => 'settlement_reconciliation',
-                'status' => 'success',
-                'data'   => $normalizedData,
-                'meta'   => [
-                    'pagination' => $r['pagination'] ?? [],
-                ],
-                'raw'    => $r,
-            ];
-
-            return $this->success($norm);
+            return $this->success($r);
         } catch (\Throwable $e) {
             return $this->handleException($e, 'settlementRecon');
         }
